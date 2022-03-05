@@ -1,0 +1,14 @@
+# config files
+config.json
+levels.json
+
+# python related
+__pycache__
+*.pyc
+venv
+
+# helper folders
+keys/
+src/
+
+.idea
