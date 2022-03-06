@@ -2,7 +2,7 @@ import json
 import os
 from unittest import TestCase
 
-from config import Config, LoadingError
+from config import Config, ConfigLoadingError
 
 
 class TestConfig(TestCase):
@@ -18,7 +18,7 @@ class TestConfig(TestCase):
 
 	def test_load_non_existing_config(self):
 		config = Config(self.filename)
-		self.assertRaises(LoadingError, lambda: config.load())
+		self.assertRaises(ConfigLoadingError, lambda: config.load())
 		self.assertTrue(os.path.exists(self.filename))
 
 	def test_load_existing_config(self):

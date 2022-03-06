@@ -7,7 +7,7 @@ class Config:
 		"SERVER_URL": "WARGAME.labs.overthewire.org",
 		"SERVER_PORT": 2220,
 		"USERNAME_FORMAT": "WARGAME{}",
-		"DEFAULT_LEVEL": 1,
+		"DEFAULT_LEVEL": 0,
 	}
 
 	def __init__(self, filename):
@@ -17,7 +17,7 @@ class Config:
 	def load(self):
 		if not os.path.exists(self.filename):
 			self.save()
-			raise LoadingError(self.filename)
+			raise ConfigLoadingError(self.filename)
 		with open(self.filename, 'r') as f:
 			self.config = json.load(f)
 
@@ -44,7 +44,6 @@ class Config:
 		self.config['DEFAULT_LEVEL'] = default_level
 
 
-
-class LoadingError(RuntimeError):
+class ConfigLoadingError(RuntimeError):
 	def __init__(self, filename):
 		super().__init__(f"Please, fill the config with appropriate values for your wargame ({filename})")

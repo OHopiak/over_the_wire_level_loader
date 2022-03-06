@@ -2,89 +2,45 @@ import json
 import os
 
 from config import Config
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LEVELS_FILE = os.path.join(BASE_DIR, "levels.json")
+from level import Level
 
 
 class LevelLoader:
-	def __init__(self, filename):
+	def __init__(self, config: Config, filename):
+		self.config = config
 		self.filename = filename
-
-
-class Level:
-	levels = {}
-
-	def __init__(self, config: Config = None, level_num=1):
-		self._config = config
-		self.level_number = level_num
-		self.username = config.username(level_num)
-		self.password = None
-		self.description = None
-		self.tip = None
-		self.solution = None
-
-		self.load()
-
-	def run(self):
-		if not self.password:
-			print("This level is not explored yet =)")
-			exit(1)
-		os.execv("/bin/expect", self.get_command())
-
-	def get_command(self):
-		return [
-			"expect", "-c",
-			f'spawn ssh {self.username}@{self._config.server_url} -p {self._config.server_port};' +
-			f' expect "assword:"; send "{self.password}\n"; interact'
-		]
-
-	@staticmethod
-	def __fetch_level_data():
-		if os.path.exists(LEVELS_FILE):
-			with open(LEVELS_FILE, "r") as f:
-				data = f.read()
-				if data:
-					new_levels = json.loads(data)
-					if new_levels:
-						Level.levels = new_levels
-
-	# if not Level.levels:
-	# 	Level.levels = {
-	# 		1: Level().to_dict()
-	# 	}
-	# 	Level.__save_level_data()
-
-	@staticmethod
-	def __save_level_data():
-		with open(LEVELS_FILE, "w+") as f:
-			f.write(json.dumps(Level.levels, indent=2))
-
-	def save(self):
-		Level.levels[str(self.level_number)] = self.to_dict()
-		Level.__save_level_data()
+		self.levels = {}
 
 	def load(self):
-		Level.__fetch_level_data()
-		current = Level.levels.get(str(self.level_number))
-		if not current:
-			current = {}
-		self.password = current.get("password")
-		self.description = current.get("description", "")
-		self.tip = current.get("tip", "")
-		self.solution = current.get("solution", "")
+		if not os.path.exists(self.filename):
+			self.levels[0] = Level(self.config)
+			self.save()
+			return
+		with open(self.filename, 'r') as f:
+			levels_data = json.load(f)
 
-	def to_dict(self):
-		return {
-			"username": self.username,
-			"description": self.description,
-			"password": self.password,
-			"solution": self.solution,
-			"tip": self.tip,
+		for level_number_str, level_data in levels_data.items():
+			level_number = int(level_number_str)
+
+			level = Level(self.config, level_number)
+			level.password = level_data.get('password')
+			level.description = level_data.get('description')
+			level.solution = level_data.get('solution')
+			level.tip = level_data.get('tip')
+
+			self.levels[level_number] = level
+
+	def save(self):
+		levels_data = {
+			level.level_number: level.to_dict()
+			for level in self.levels.values()
 		}
+		with open(self.filename, 'w') as f:
+			json.dump(levels_data, f, indent='\t')
 
-	def print_info(self):
-		print("Level #{}".format(self.level_number))
-		print('    Username: "{}"'.format(self.username))
-		print('    Password: "{}"'.format(self.password))
-		print('    Description: "{}"'.format(self.description))
+	def get_level(self, level_number: int) -> Level:
+		return self.levels.get(level_number)
+
+	def save_level(self, level: Level):
+		self.levels[level.level_number] = level
+		self.save()
